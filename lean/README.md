@@ -213,7 +213,8 @@ repository:
 
 The check shows the frames and the differing frames of each recording, then a total line. It shows the first differing
 frame, counted from 0. These are faults: a failed replay, a different number of frames, a missing switch report, a
-different loaded core file, and a hash that is equal for all frames of a recording. The exit code is 0 only when all
+different loaded core file, switches in the core that do not match `--switch`, and a hash that is equal for all frames
+of a recording. The exit code is 0 only when all
 recordings have no difference and no fault.
 
 `<mario-gym>/.venv/bin/python -I lean/check/selftest.py` tests the fault paths on made-up files. It needs no emulator.
@@ -269,8 +270,9 @@ machine. Run this command in the root folder of the repository:
   of this; numbers from a busy machine are not measurements.
 
 The table gives the median, the lowest and the highest time per frame in microseconds. `time/ref` is the time divided by
-the time of the reference. `speed-up` is the reverse ratio. The exit code is 1 when the candidate writes no switch report
-line for a switch setting, because the switch did not reach the core.
+the time of the reference. `speed-up` is the reverse ratio. With a switch setting, each tool first asks the core for its
+switches (`snes9x_lean_flags`) and reports an error when they do not match the setting. The bench then stops with exit
+code 1.
 
 Results: (filled by task 5.2)
 

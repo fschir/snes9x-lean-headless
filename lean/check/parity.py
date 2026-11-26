@@ -74,10 +74,11 @@ def compare_recording(out_dir, name, switch="", exit_codes=None):
         if code:
             tail = "".join(f"\n      {line}" for line in read_text(log).splitlines()[-5:])
             result.faults.append(f"{side} replay failed with exit code {code}, log {log}{tail}")
-            continue
         if side == "candidate" and switch and not has_report_line(read_text(log), switch):
             result.faults.append(f"no switch report: no line of the candidate's standard error names every switch "
                                  f"of '{switch}', log {log}")
+        if code:
+            continue
         try:
             array = np.load(file_path(out_dir, name, side, "npy"), allow_pickle=False)
         except (OSError, ValueError, EOFError) as error:

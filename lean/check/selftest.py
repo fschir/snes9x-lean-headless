@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 
 import numpy as np
 
@@ -18,6 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # `python -I` does not add the folder of the script
 sys.dont_write_bytecode = True  # no __pycache__ folder in the checkout
 import bench  # noqa: E402
+import parity  # noqa: E402
 import replay  # noqa: E402
 import savestate  # noqa: E402
 
@@ -29,7 +31,7 @@ def check(condition, message):
         raise AssertionError(message)
 
 
-def parity(folder, *options):
+def run_parity(folder, *options):
     """Run parity.py on the files of folder; return (exit code, standard output)."""
     command = [sys.executable, "-I", os.path.join(HERE, "parity.py"), "--compare-only", folder, *options]
     run = subprocess.run(command, capture_output=True, text=True)
@@ -46,7 +48,7 @@ def write(folder, name, baseline, candidate, stderr=None):
 
 
 def expect(folder, passes, *texts, options=()):
-    code, output = parity(folder, *options)
+    code, output = run_parity(folder, *options)
     check(code == (0 if passes else 1), f"exit code {code}\n{output}")
     for text in texts:
         check(text in output, f"the output lacks '{text}'\n{output}")
@@ -106,7 +108,7 @@ def wrong_loaded_core(folder):
             raise AssertionError(f"no error for {lines}")
 
 
-def missing_switch_report(folder):
+def switch_report(folder):
     # No line is a report: one name per line, and names that are only parts of a path or of a longer word.
     noise = "note: /tmp/core-video-dsp/snes9x_libretro.so\nvideo only\ndsp only\nvideos and adsp\n"
     for stderr in (noise, ""):
@@ -114,13 +116,32 @@ def missing_switch_report(folder):
         expect(folder, False, "FAULT silent: no switch report", "0 differing frames, 1 faults: FAIL",
                options=("--switch", "video,dsp"))
     expect(folder, True, "PASS")  # without a switch, no report is necessary
+    # A failed candidate replay shows the missing report too.
+    faults = parity.compare_recording(folder, "silent", "video", {"candidate": 1}).faults
+    check(len(faults) == 2 and "replay failed" in faults[0] and "no switch report" in faults[1], f"{faults}")
+    # With the report line, the same recording passes.
+    for stderr, switch in (("other line\nSNES9X_LEAN: switches dsp, video.\n", "video,dsp"),
+                           ("SNES9X_LEAN=video\n", "video")):
+        write(folder, "silent", FRAMES, FRAMES, stderr=stderr)
+        expect(folder, True, "0 faults: PASS", options=("--switch", switch))
 
 
-def switch_report_present(folder):
-    write(folder, "lean", FRAMES, FRAMES, stderr="other line\nSNES9X_LEAN: switches dsp, video.\n")
-    expect(folder, True, "0 faults: PASS", options=("--switch", "video,dsp"))
-    write(folder, "lean", FRAMES, FRAMES, stderr="SNES9X_LEAN=video\n")
-    expect(folder, True, "0 faults: PASS", options=("--switch", "video"))
+def switch_flags(folder):
+    def core(flags):  # a made-up library; flags None = a core without the export
+        return types.SimpleNamespace() if flags is None else types.SimpleNamespace(snes9x_lean_flags=lambda: flags)
+
+    for flags, switch in ((3, "video,dsp"), (3, "dsp,video"), (1, "video"), (2, "dsp,dsp"), (0, ""), (None, "")):
+        replay.check_switch_flags(core(flags), switch)  # these raise nothing
+    for flags, switch, text in ((None, "video", "no snes9x_lean_flags"), (0, "video", "expected 1, "),
+                                (1, "video,dsp", "expected 3, "), (3, "dsp", "gives 3"), (1, "", "expected 0, "),
+                                (-1, "", "gives -1"), (3, "video,sound", "not a switch")):
+        try:
+            replay.check_switch_flags(core(flags), switch)
+        except replay.SwitchError as error:
+            check(text in str(error), f"{flags} '{switch}': the error lacks '{text}': {error}")
+            check(not parity.has_report_line(str(error), switch or "video"), f"the error reads as a report: {error}")
+        else:
+            raise AssertionError(f"no error for flags {flags} and switch '{switch}'")
 
 
 def write_savestate_run(folder, change=None, states=(b"state", b"state")):
@@ -197,7 +218,7 @@ def bench_rules(folder):
 
 
 CASES = (equal_hashes, one_differing_frame, different_frame_counts, all_hashes_equal, missing_hashes,
-         wrong_loaded_core, missing_switch_report, switch_report_present, savestate_comparison, bench_rules)
+         wrong_loaded_core, switch_report, switch_flags, savestate_comparison, bench_rules)
 
 
 def main():

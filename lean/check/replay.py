@@ -7,18 +7,25 @@ The script runs one recording on the core in <core-dir> (snes9x_libretro.so and 
 writes one unsigned 64-bit hash per frame to <out.npy> and prints one summary line to standard output. The exit code
 is not 0 on an error. It needs a Python with stable-retro 1.0.1, numpy and the imported SuperMarioWorld-Snes-v0 ROM.
 
-VALUE goes into SNES9X_LEAN. An empty value removes the variable. The script never writes the value to standard
-error, because parity.py looks there for the switch report of the core.
+VALUE goes into SNES9X_LEAN. An empty value removes the variable. The script never writes the value or a switch name
+to standard error, also not in an error message, because parity.py looks there for the switch report of the core.
+
+After the start, the script asks the core which switches are on, with the export snes9x_lean_flags (bit 0 video, bit 1
+dsp, -1 bad value). With a value, the core must have the export and give the bits of the value. With an empty value, a
+core that has the export must give 0; a core without it (the shipped core) passes.
 
 API for the other check tools (stable-retro allows one emulator per process):
 
     CORE_FILE, SWITCH_VARIABLE     the names of the core file and of the switch variable
     default_core_dir()             the cores folder of the installed stable-retro, found without an import of it
-    prepare(core_dir, switch="")   sets the environment, starts the emulator, checks the loaded core -> (env, ram)
+    prepare(core_dir, switch="")   sets the environment, starts the emulator, checks the loaded core and its switches
+                                   -> (env, ram)
     open_movie(env, path)          -> (start_state, masks) of a recording; masks yields one button mask per frame
     frame_hash(ram)                the 64-bit hash of the work RAM, as an int
     check_loaded_core(maps_lines, core_dir)   raises LoadedCoreError when the maps lines show another core file
     LoadedCoreError                the error of the loaded core control
+    check_switch_flags(library, switch)   raises SwitchError when snes9x_lean_flags of the core does not fit the value
+    SwitchError                    the error of the switch control
     child_environment()            os.environ without SNES9X_LEAN and RETRO_CORE_PATH, for a child process
 
 Call prepare() before anything imports stable_retro. It raises an error otherwise, because the core folder and the
@@ -46,6 +53,7 @@ GAME = "SuperMarioWorld-Snes-v0"
 CORE_FILE = "snes9x_libretro.so"
 CORE_INFO_FILE = "snes9x.json"
 SWITCH_VARIABLE = "SNES9X_LEAN"
+_SWITCH_BITS = {"video": 1, "dsp": 2}  # the bits that snes9x_lean_flags gives
 _SYSTEM_RAM = 2  # RETRO_MEMORY_SYSTEM_RAM
 _RAM_BYTES = 128 * 1024
 # Odd weights: a change in exactly one 64-bit word always changes the hash. Keep the seed, so that hash files of
@@ -56,6 +64,10 @@ _WEIGHTS = (np.random.default_rng(2026).integers(0, 2**63, size=_RAM_BYTES // 8,
 
 class LoadedCoreError(RuntimeError):
     """The process did not load the core file of the given core folder."""
+
+
+class SwitchError(RuntimeError):
+    """The loaded core does not have exactly the switches of the switch value on."""
 
 
 def default_core_dir():
@@ -100,9 +112,30 @@ def _set_environment(core_dir, switch):
     return core_dir
 
 
-def _ram_view(core_dir):
-    # RTLD_NOLOAD: take the library that the emulator loaded, never a second copy with its own memory.
-    library = ctypes.CDLL(os.path.join(core_dir, CORE_FILE), mode=os.RTLD_NOLOAD | os.RTLD_LAZY)
+def check_switch_flags(library, switch):
+    """Positive control: the loaded core library must report exactly the switches of the value.
+
+    No message names a switch: standard error is where parity.py looks for the switch report of the core.
+    """
+    names = switch.split(",") if switch else []
+    if any(name not in _SWITCH_BITS for name in names):
+        raise SwitchError("the switch value has a name that is not a switch, and the core started with it")
+    expected = 0
+    for name in names:
+        expected |= _SWITCH_BITS[name]
+    query = getattr(library, "snes9x_lean_flags", None)
+    if query is None:
+        if switch:
+            raise SwitchError(f"the core has no snes9x_lean_flags; expected switch flags {expected}")
+        return  # a core without switches, such as the shipped core
+    query.argtypes = []
+    query.restype = ctypes.c_int
+    got = query()
+    if got != expected:
+        raise SwitchError(f"wrong switch flags: expected {expected}, snes9x_lean_flags of the core gives {got}")
+
+
+def _ram_view(library):
     library.retro_get_memory_data.argtypes = [ctypes.c_uint]
     library.retro_get_memory_data.restype = ctypes.c_void_p
     library.retro_get_memory_size.argtypes = [ctypes.c_uint]
@@ -123,7 +156,10 @@ def prepare(core_dir, switch=""):
                             use_restricted_actions=stable_retro.Actions.ALL, obs_type=stable_retro.Observations.RAM)
     with open("/proc/self/maps") as maps:
         check_loaded_core(maps, core_dir)
-    return env, _ram_view(core_dir)
+    # RTLD_NOLOAD: take the library that the emulator loaded, never a second copy with its own memory.
+    library = ctypes.CDLL(os.path.join(core_dir, CORE_FILE), mode=os.RTLD_NOLOAD | os.RTLD_LAZY)
+    check_switch_flags(library, switch)
+    return env, _ram_view(library)
 
 
 def open_movie(env, path):
