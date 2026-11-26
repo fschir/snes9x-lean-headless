@@ -290,8 +290,8 @@ void S9xMainLoop (void)
 		if (CPU.Flags & SCAN_KEYS_FLAG)
 			break;
 
-		register uint8				Op;
-		register struct	SOpcodes	*Opcodes;
+		uint8				Op;
+		struct	SOpcodes	*Opcodes;
 
 		if (CPU.PCBase)
 		{
@@ -325,7 +325,7 @@ void S9xMainLoop (void)
 
 		if (Settings.SA1)
 			S9xSA1MainLoop();
-			
+
 #ifdef LAGFIX
 		if (finishedFrame)
 		break;
@@ -337,7 +337,7 @@ void S9xMainLoop (void)
 #endif
 	{
 		S9xPackStatus();
-	
+
 		if (CPU.Flags & SCAN_KEYS_FLAG)
 		{
 			#ifdef DEBUGGER
