@@ -1,0 +1,43 @@
+schema: spec-driven
+
+
+context: |
+  Project: a fork of libretro/snes9x (the Snes9x 1.54.1 libretro port of 2017) that is the SNES core of mario-gym, a
+  reinforcement-learning environment for Super Mario World on stable-retro 1.0.1. Goal: a faster core for training that
+  emulates the same game, frame for frame. A learning project, not for sale.
+  Repository: https://github.com/fschir/snes9x (public fork of libretro/snes9x; upstream remote = libretro/snes9x).
+  Branches: stable-retro-v1.0.1 and the tag baseline-stable-retro-v1.0.1 (commit 10662203) are the core of stable-retro
+  1.0.1, byte for byte (libretro/snes9x 05cb2edc + stable-retro's build patch). Never change them. master starts at the
+  baseline and receives the merges, only on the owner's word. Each change has its own feature branch, named after the change.
+  Build: C/C++ (C++17) with libretro/Makefile, the same way stable-retro builds it: in libretro/,
+  CFLAGS="-w -std=gnu17" CXXFLAGS="-w" LDFLAGS="-w -static-libstdc++ -Wl,--exclude-libs,ALL" make -f Makefile fpic=-fPIC.
+  LAGFIX=1 must stay: it sets the point where retro_run ends a frame, and mario-gym reads the RAM at that point.
+  Consumer: mario-gym loads the core with RETRO_CORE_PATH=<folder with snes9x_libretro.so and snes9x.json>, set before
+  `import stable_retro` (the stable_retro.core_path() setter after the import has no effect). mario-gym reads only the
+  128 KB work RAM after each frame; it uses no audio, and screen pixels only in its video tools.
+  Parity: with every new feature off, the core must behave exactly as the baseline. Reference check: replay the owner's
+  nine .bk2 recordings (1,263,629 frames, mario-gym checkout, local/build/) and compare a hash of the work RAM after
+  every frame with the baseline core. The ROM, the recordings and the savestates stay out of this repository.
+  Savestates: the stable-retro savestate format (#!s9xsnp:0009) must load in both directions (baseline <-> fork).
+  Licence: the Snes9x licence (non-commercial; when shared, free of charge and with the source).
+  Benchmarks: only on a quiet machine, never while a mario-gym training run is on.
+
+rules:
+  specs:
+    - Use Given/When/Then format
+    - "**strict** Use ASD-STE100 technical english."
+  tasks:
+    - Avoid excessive unit tests.
+    - Use a maximum of 10 tests per file.
+    - Focus on critical user flows.
+    - Prioritize E2E tests and integration tests over unit tests.
+
+operations:
+  apply:
+    guidance:
+      - Use Fable/Opus for orchestration and Sonnet for implementation.
+      - Agents run only the tests of the files they touch.
+      - When the change is implemented successfully, commit the branch and push it to GitHub (never to master or to stable-retro-v1.0.1).
+  archive:
+    guidance:
+      - Commit the branch and push it to GitHub again after the archive.
