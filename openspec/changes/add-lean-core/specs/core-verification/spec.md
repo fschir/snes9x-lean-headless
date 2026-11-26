@@ -55,8 +55,8 @@ This error shows that the check does not read the current work RAM.
 ### Requirement: Savestate check
 The project MUST give a savestate check. Its inputs are the recordings, the baseline core folder, the candidate core
 folder and a switch value. At three frames of each recording, the check MUST save a state in one core and load it in the
-other core, in the two directions. After each load, it MUST run 900 frames with the inputs of the recording and compare
-the work RAM after each frame with the baseline core.
+other core, in the two directions. After each load, it MUST run 900 frames with the inputs of the recording, or the
+frames that are left when the recording has fewer, and compare the work RAM after each frame with the baseline core.
 
 #### Scenario: Two directions
 - **GIVEN** the candidate core with the switches `video` and `dsp`

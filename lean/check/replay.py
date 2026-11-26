@@ -19,6 +19,7 @@ API for the other check tools (stable-retro allows one emulator per process):
     frame_hash(ram)                the 64-bit hash of the work RAM, as an int
     check_loaded_core(maps_lines, core_dir)   raises LoadedCoreError when the maps lines show another core file
     LoadedCoreError                the error of the loaded core control
+    child_environment()            os.environ without SNES9X_LEAN and RETRO_CORE_PATH, for a child process
 
 Call prepare() before anything imports stable_retro. It raises an error otherwise, because the core folder and the
 switches work only when they are set before the import. `ram` is a live view of the 131,072 bytes of work RAM, not a
@@ -62,6 +63,11 @@ def default_core_dir():
     if spec is None or not spec.submodule_search_locations:
         raise RuntimeError("stable_retro is not installed for this Python")
     return os.path.join(spec.submodule_search_locations[0], "cores")
+
+
+def child_environment():
+    """The environment for a process that calls prepare(), without values that the parent process has inherited."""
+    return {key: value for key, value in os.environ.items() if key not in (SWITCH_VARIABLE, "RETRO_CORE_PATH")}
 
 
 def check_loaded_core(maps_lines, core_dir):

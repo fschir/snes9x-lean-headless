@@ -34,7 +34,7 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 ## 4. Savestate check
 
 - [ ] 4.1 Write `lean/check/savestate.py` (design D6: states at 25 %, 50 % and 75 % of each recording, loads in two directions, 900 frames, work RAM and, when the loading core draws, screen; with no switch also a byte comparison of the saved states); verify that the candidate with `video,dsp` gives 0 differing frames in both directions on the nine recordings, and that with no switch the saved states are byte-equal to the baseline's
-- [ ] 4.2 Add the savestate section to `lean/README.md` and verify the documented command runs as written
+- [x] 4.2 Add the savestate section to `lean/README.md` and verify the documented command runs as written
 
 ## 5. Speed bench
 

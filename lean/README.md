@@ -119,11 +119,59 @@ recordings have no difference and no fault.
 
 ## Savestate check
 
-(filled by a later task)
+The savestate check shows that a state of one core works in the other core. It saves states at 25 %, 50 % and 75 % of
+each recording, in the two cores. Then it loads the states and runs 900 frames with the inputs of the recording.
+
+Run this command in the root folder of the repository:
+
+```sh
+<mario-gym>/.venv/bin/python -I lean/check/savestate.py --candidate <core-dir> --out-dir <out-dir> \
+    <mario-gym>/local/build/recordings/ysp-direct.bk2 <mario-gym>/local/build/playthrough/s01.bk2
+```
+
+- The reference is the baseline core that loads its own state.
+- The baseline core loads the candidate state. The check compares the work RAM and the screen of each frame with the
+  reference.
+- The candidate core loads the baseline state. The check compares the work RAM. It compares the screen only when the
+  switch value does not contain `video`.
+- When a recording has less than 900 frames after a save frame, the check runs the remaining frames and shows this.
+  `ysp-direct` is such a recording at 75 %. A save frame with no frame after it is a fault.
+- With no switch, the savestates of the two cores must be equal, byte for byte.
+- `--switch`, `--baseline`, `--jobs` and `--out-dir` work as in the parity check. Without `--out-dir`, the check makes a
+  new temporary folder.
+
+The check shows each load and a total line. The exit code is 0 only when there is no differing frame and no fault.
 
 ## Speed bench
 
-(filled by a later task)
+The speed bench measures the time of one emulated frame: the button input and the frame step. Run it on a quiet
+machine. Run this command in the root folder of the repository:
+
+```sh
+<mario-gym>/.venv/bin/python -I lean/check/bench.py --candidate <core-dir> \
+    <mario-gym>/local/build/reference/a1-human-96exit.bk2 \
+    <mario-gym>/local/build/recordings/full-run-02.bk2 \
+    <mario-gym>/local/build/recordings/full-run-04.bk2 \
+    <mario-gym>/local/build/recordings/full-run-05.bk2
+```
+
+- The settings are the baseline core with no switch (the reference) and the candidate core with no switch, `video`,
+  `dsp` and `video,dsp`.
+- `--settings` selects the settings with a comma between two names: `ref`, `none`, `video`, `dsp`, `video+dsp` (both
+  switches). The default is all of them. The bench always measures the reference `ref`.
+- Each measurement uses the first 15,000 frames of each recording (`--frames`).
+- The bench measures 1 worker on CPU 4, then 16 workers on CPUs 0 to 15. `--workers 1` or `--workers 16` measures only
+  one worker count. The default is `both`.
+- The settings run in turn, in three rounds (`--rounds`). With 16 workers, the value of a round is the mean time of the
+  workers.
+- The bench shows the 1-minute load average. It stops when the load is more than 2.0. `--allow-load` starts it in spite
+  of this; numbers from a busy machine are not measurements.
+
+The table gives the median, the lowest and the highest time per frame in microseconds. `time/ref` is the time divided by
+the time of the reference. `speed-up` is the reverse ratio. The exit code is 1 when the candidate writes no switch report
+line for a switch setting, because the switch did not reach the core.
+
+Results: (filled by task 5.2)
 
 ## Compiler flags
 
