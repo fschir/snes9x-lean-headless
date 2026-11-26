@@ -127,6 +127,8 @@ flags that `retro_init` set and changes nothing. Reason (owner decision 2026-11-
 a `RETRO_CORE_PATH` that comes too late (a forkserver keeps the environment of its first start) or a baseline core
 runs without the switches and without an error, only slower; a consumer reads the function through ctypes
 (`RTLD_NOLOAD` on the loaded core) and stops when the flags are not the ones it asked for.
+  After a bad value, stable-retro unloads the core once the game load fails (`Could not load ROM`), so only a frontend
+  that calls the function before the game load can read -1 (checked in task 3.6 with a minimal ctypes libretro host).
 - *Alternative:* the consumer captures the stderr report line during `stable_retro.make`. Kept as a second signal, but
   a redirect of file descriptor 2 around the core start is fragile.
 

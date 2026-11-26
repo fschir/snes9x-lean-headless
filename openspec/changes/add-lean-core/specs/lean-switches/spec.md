@@ -75,9 +75,15 @@ NOT change a switch. A program can use it to make sure that the switches are on.
 - **THEN** the function gives 0
 
 #### Scenario: Query after a bad value
-- **GIVEN** the core started with `SNES9X_LEAN` set to `video,sound`
-- **WHEN** a program calls `snes9x_lean_flags`
+- **GIVEN** a libretro frontend started the core with `SNES9X_LEAN` set to `video,sound`
+- **WHEN** the frontend calls `snes9x_lean_flags` before the game load
 - **THEN** the function gives -1
+
+#### Scenario: Bad value with stable-retro
+- **GIVEN** `SNES9X_LEAN` is `video,sound`
+- **WHEN** a Python program makes a stable-retro environment with the core
+- **THEN** the game load fails, stable-retro removes the core from the process and raises an error
+- **AND** the program cannot call `snes9x_lean_flags`, because the core is not loaded
 
 ### Requirement: Baseline behavior without switches
 When no switch is set, the core MUST operate as the baseline core. The baseline core is the core of the branch
