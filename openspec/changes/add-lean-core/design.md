@@ -11,7 +11,7 @@ checkout or on the shipped binary of stable-retro 1.0.1):
   `RenderLine` still runs `S9xSetupOBJ` and keeps `PPU.RangeTimeOver` (Snes9x's frameskip design), and
   `S9xEndScreenRefresh` does not call `video_cb`. stable-retro's `get_screen()` then keeps the last picture (black before
   the first one); no crash.
-- **Sound.** In this build (`SNES9X` defined) the SPC700 only counts `dsp.clock`; the DSP runs only when
+- **Sound.** In this build (`SNES9X` is defined in `apu/bapu/snes/snes.hpp:6`) the SPC700 only counts `dsp.clock`; the DSP runs only when
   `DSP::synchronize()` (`apu/bapu/dsp/sdsp.hpp`) catches it up: on a DSP register read or write and at
   `S9xAPUEndScanline`. `synchronize()` calls `spc_dsp.run(clock)` and then sets `clock = 0`. The game CPU talks only to the
   SPC700 (four ports), never to the DSP.
@@ -46,8 +46,8 @@ checkout or on the shipped binary of stable-retro 1.0.1):
 ### D1. Read `SNES9X_LEAN` in `retro_init`, reject a bad value in `retro_load_game`
 `retro_init` reads the variable with `getenv` one time, parses it into two flags (`lean_video_off`, `lean_dsp_off`) and
 writes the report line to stderr. `retro_init` returns `void`, so a bad value is kept as an error, and `retro_load_game`
-writes the error and returns `false`; stable-retro then fails to create the emulator. A bad value never runs silently as
-the baseline or as a lean core.
+writes the error and returns `false`. stable-retro is expected to fail to create the emulator then (not yet checked:
+task 3.1 verifies it). A bad value never runs silently as the baseline or as a lean core.
 - *Alternative:* parse in `retro_load_game` (read per game load). Rejected: the spec reads the variable once per core
   start, and mario-gym creates one emulator per process anyway.
 - *Alternative:* ignore unknown names. Rejected: a typo (`vidoe`) would silently run the slow core.
@@ -67,8 +67,9 @@ and `libretro/libretro.cpp` (definitions), so the APU code needs only the header
 
 ### D4. Build script `lean/build.sh`
 `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]`:
-1. Copy the tracked files of the working tree (`git ls-files`, with uncommitted edits) into a temporary build folder, so
-   the checkout stays clean (spec "Clean source tree").
+1. Copy the files of the working tree into a temporary build folder: the tracked files with their uncommitted edits and
+   the new files that git does not ignore (`git ls-files --cached --others --exclude-standard`, so a new `lean.h` is
+   part of the build before its first commit). The checkout stays clean (spec "Clean source tree").
 2. Run the stable-retro recipe in `libretro/` of the copy:
    `env CFLAGS="-w -std=gnu17" CXXFLAGS="-w" LDFLAGS="-w -static-libstdc++ -Wl,--exclude-libs,ALL" make -f Makefile fpic=-fPIC LEAN_FLAGS="<set>"`.
 3. Write `snes9x_libretro.so`, `snes9x.json` (a copy of `lean/snes9x.json`, equal to stable-retro 1.0.1's file) and

@@ -1,8 +1,8 @@
 # Tasks
 
-Python for the tools and checks: mario-gym's `.venv` (`/home/wst/Code/mario-gym/.venv/bin/python -I`), which has
-stable-retro 1.0.1, numpy and the imported ROM. Recordings: the nine `.bk2` files under
-`/home/wst/Code/mario-gym/local/build/` (`reference/a1-human-96exit`, `playthrough/s01`, `tour/t01`,
+`<mario-gym>` below is the owner's mario-gym checkout (its path is local, not part of this repository). Python for the
+tools and checks: `<mario-gym>/.venv/bin/python -I`, which has stable-retro 1.0.1, numpy and the imported ROM.
+Recordings: the nine `.bk2` files under `<mario-gym>/local/build/` (`reference/a1-human-96exit`, `playthrough/s01`, `tour/t01`,
 `recordings/full-run-01..05`, `recordings/ysp-direct`). Do not run pytest of mario-gym, `mario-gym train` or any
 emulator-heavy step while a mario-gym training run is on. Parallel replays use `taskset -c 0-15`.
 
@@ -10,7 +10,7 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 
 - [ ] 1.1 Add the variable `LEAN_FLAGS` (empty by default) to `libretro/Makefile`, appended to `CFLAGS`, `CXXFLAGS` and `LDFLAGS` after the `-O2 -DNDEBUG` lines (design D4); verify that `make -n -f Makefile` in `libretro/` gives the same compile and link lines as before the change when `LEAN_FLAGS` is empty
 - [ ] 1.2 Add `lean/snes9x.json` (a copy of stable-retro 1.0.1's `stable_retro/cores/snes9x.json`) and verify it is byte-equal to the installed file
-- [ ] 1.3 Write `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]` (design D4: copy of the tracked files incl. uncommitted edits into a temp folder, the stable-retro recipe, `snes9x_libretro.so` + `snes9x.json` + `build-info.txt`, check of the 25 exported `retro_*` symbols); verify a build with `--flags stable-retro` succeeds, `git status` is clean after it, and the compile lines contain `-DLAGFIX`, `-w` and `-fPIC`
+- [ ] 1.3 Write `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]` (design D4: copy of the tracked and the untracked, not ignored files, with uncommitted edits, into a temp folder, the stable-retro recipe, `snes9x_libretro.so` + `snes9x.json` + `build-info.txt`, check of the 25 exported `retro_*` symbols); verify a build with `--flags stable-retro` succeeds, `git status` is clean after it, and the compile lines contain `-DLAGFIX`, `-w` and `-fPIC`
 - [ ] 1.4 Verify that the folder of 1.3 loads: a Python process with `RETRO_CORE_PATH=<out-dir>` set before `import stable_retro` maps `<out-dir>/snes9x_libretro.so` (check `/proc/self/maps`)
 - [ ] 1.5 Write the build section of `lean/README.md` (command, flag sets, build record, `RETRO_CORE_PATH` use) and verify the documented command runs as written
 

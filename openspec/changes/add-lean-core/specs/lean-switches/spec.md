@@ -95,8 +95,8 @@ state and the inputs MUST be the same. The work RAM is the 128 KB memory at `$7E
 
 ### Requirement: Video switch stops the drawing
 With the switch `video`, the core MUST NOT draw the screen and MUST NOT give a new picture to the program. A state load
-MUST NOT start the drawing again. The core MUST NOT stop when the program reads the screen. With stable-retro, the
-screen then shows the last picture that the core gave, or a black picture when the core gave no picture.
+MUST NOT start the drawing again. The core MUST NOT stop when the program reads the screen. Because the switch applies
+from the start of the core, the core gives no picture; with stable-retro, the screen then shows a black picture.
 
 #### Scenario: Drawing after a state load
 - **GIVEN** the core with the switch `video`
