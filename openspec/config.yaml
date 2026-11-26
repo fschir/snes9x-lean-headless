@@ -5,7 +5,7 @@ context: |
   Project: a fork of libretro/snes9x (the Snes9x 1.54.1 libretro port of 2017) that is the SNES core of mario-gym, a
   reinforcement-learning environment for Super Mario World on stable-retro 1.0.1. Goal: a faster core for training that
   emulates the same game, frame for frame. A learning project, not for sale.
-  Repository: https://github.com/fschir/snes9x (public fork of libretro/snes9x; upstream remote = libretro/snes9x).
+  Repository: https://github.com/fschir/snes9x-lean-headless (public fork of libretro/snes9x; upstream remote = libretro/snes9x).
   Branches: stable-retro-v1.0.1 and the tag baseline-stable-retro-v1.0.1 (commit 10662203) are the core of stable-retro
   1.0.1, byte for byte (libretro/snes9x 05cb2edc + stable-retro's build patch). Never change them. master starts at the
   baseline and receives the merges, only on the owner's word. Each change has its own feature branch, named after the change.

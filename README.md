@@ -1,4 +1,6 @@
-# snes9x libretro: lean core fork
+# snes9x-lean-headless
+
+A lean, headless build of the snes9x libretro core.
 
 This is a fork of [libretro/snes9x](https://github.com/libretro/snes9x) for
 [stable-retro](https://github.com/Farama-Foundation/stable-retro) 1.0.1. It makes the SNES core about twice as fast for
