@@ -2,6 +2,7 @@
 #define __SNES_HPP
 
 #include "snes9x.h"
+#include "lean.h" // here, not in sdsp.hpp: that file is inside namespace SNES
 
 #define SNES9X
 

@@ -55,7 +55,7 @@ done
 set_flags=$(flags_of_set "$flag_set") || die "unknown flag set '$flag_set'. $usage"
 lean_flags="$set_flags${set_flags:+${extra:+ }}$extra"
 
-for tool in git rsync make gcc g++ nm; do
+for tool in git rsync make gcc g++ nm objdump; do
     command -v "$tool" >/dev/null || die "'$tool' is not installed"
 done
 
@@ -129,6 +129,11 @@ if ! diff -u --label lean/exports.txt --label built-library \
     die "the exported symbols differ from lean/exports.txt; no core was written to $out"
 fi
 
+# The highest glibc version that the library needs. It comes from the glibc of this
+# machine; a machine that runs the core needs this version or a newer one.
+glibc=$(objdump -T "$lib" | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)+' | sed 's/^GLIBC_//' | sort -uV | tail -n 1) ||
+    die "found no GLIBC_ symbol version in the library; no core was written to $out"
+
 cp -- "$info_file" "$out/snes9x.json"
 {
     echo "commit: $commit"
@@ -137,6 +142,7 @@ cp -- "$info_file" "$out/snes9x.json"
     echo "extra flags: $extra"
     echo "LEAN_FLAGS: $lean_flags"
     echo "compiler: $compiler"
+    echo "glibc needed: $glibc"
 } >"$out/build-info.txt"
 cp -- "$lib" "$out/snes9x_libretro.so"
 

@@ -14,7 +14,7 @@ lean/build.sh <out-dir>
 
 All arguments: `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]`
 
-The script needs `git`, `rsync`, `make`, `gcc`, `g++` and `nm`.
+The script needs `git`, `rsync`, `make`, `gcc`, `g++`, `nm` and `objdump`.
 
 ### What the script does
 
@@ -25,7 +25,7 @@ The script needs `git`, `rsync`, `make`, `gcc`, `g++` and `nm`.
   `-w -std=gnu17`, `CXXFLAGS` `-w`, `LDFLAGS` `-w -static-libstdc++ -Wl,--exclude-libs,ALL`, and `fpic=-fPIC`.
   `LAGFIX=1` stays, because it sets the point where a frame ends.
 - It gives the commit of the checkout to the Makefile, so the core reports the version `1.54.1 <short commit>`.
-- It compares the exported symbols of the library with the 25 names in `lean/exports.txt`. On a difference the script
+- It compares the exported symbols of the library with the 26 names in `lean/exports.txt` (25 `retro_*` functions and `snes9x_lean_flags`). On a difference the script
   stops with an error and writes no core.
 
 The build runs in `$TMPDIR` (default `/tmp`). The script removes the temporary folder at the end. If that place is full,
@@ -63,6 +63,12 @@ The build record gives:
 - `extra flags`: the value of `--extra`.
 - `LEAN_FLAGS`: all flags that the build added to the recipe.
 - `compiler`: the first line of `gcc --version`.
+- `glibc needed`: the highest glibc version that the core needs.
+
+The glibc version that the core needs comes from the glibc of the build machine. A build on the owner's desktop
+(GCC 16.2, glibc 2.44) needs glibc 2.38; the core that stable-retro ships needs 2.25. Before you copy a core to another
+machine, compare `glibc needed` with the glibc of that machine (`ldd --version`): glibc 2.39 (Ubuntu 24.04) is new
+enough, 2.35 (Ubuntu 22.04) is not.
 
 ### Use the core folder
 
@@ -85,7 +91,102 @@ The output must be `<out-dir>/snes9x_libretro.so`.
 
 ## Switches
 
-(filled by a later task)
+The environment variable `SNES9X_LEAN` stops parts of the core that a training program does not use. The work RAM after
+each frame stays equal to the work RAM of the baseline core.
+
+| Name    | The core does not              | What the program sees                    |
+|---------|--------------------------------|------------------------------------------|
+| `video` | draw the screen                | No picture. A screen read is an error.   |
+| `dsp`   | run the sound DSP              | No usable audio. The sound CPU runs.     |
+
+The value is a list of names with a comma between two names, for example `video,dsp`. A name can occur more than one
+time. When the variable is not set or is empty, the core has no switch and operates as the baseline core.
+
+### When the core reads the variable
+
+The core reads the variable one time, when it starts. A change after the start has no effect. Set the variable before
+the program makes the emulator. The switches apply to one process. A child process inherits the variable, so remove it
+from the environment of a child process that needs pictures or sound.
+
+For a correct value, the core writes one line to the standard error stream, for example `SNES9X_LEAN: video,dsp`.
+
+### Bad values
+
+A name that is not `video` or `dsp` is bad. An empty name (`video,` or `,dsp`) is bad. A space is part of a name, and
+capital letters are different letters. With a bad value the core loads no game and writes this line to the standard
+error stream:
+
+```text
+SNES9X_LEAN: error: bad value "video,sound", the game is not loaded (valid names: video, dsp; a comma between two names)
+```
+
+`stable_retro.make` then raises `RuntimeError: Could not load ROM`.
+
+### Screen with `video`
+
+**A program that needs pictures must not set `video`.** The core gives no picture, from the start of the core. A state
+load does not start the drawing again. stable-retro 1.0.1 then raises `RuntimeError: Core did not provide a CPU
+framebuffer ...` in these cases:
+
+- `env.em.get_screen()`, at each time.
+- `stable_retro.make` with image observations. This is the default of `make`.
+
+Make the environment with `obs_type=stable_retro.Observations.RAM`. After the error of a screen read, the emulator
+continues to operate.
+
+### Sound with `dsp`
+
+The audio samples have no defined content. With stable-retro 1.0.1, `env.em.get_audio()` gives an empty array. The
+program does not stop.
+
+### Savestates
+
+The format of the savestates does not change. A state of a core with switches is not byte-equal to a state of the
+baseline core: with `video`, one byte of the `PPU` block can differ, and with `dsp`, the sound block `SND` differs. The
+savestate check tests the loads in the two directions.
+
+### Make sure that the switches are on
+
+A core without the switches gives no error, it is only slower. This occurs when the program loads a different core, for
+example because `RETRO_CORE_PATH` was set too late. The core exports the function `int snes9x_lean_flags(void)`:
+
+| Result | Meaning                                  |
+|--------|------------------------------------------|
+| 0      | No switch.                               |
+| 1      | `video`.                                 |
+| 2      | `dsp`.                                   |
+| 3      | `video` and `dsp`.                       |
+| -1     | Bad value.                               |
+
+The function changes nothing. Its result is valid after the start of the core. With stable-retro, call it after
+`make`, on the library that is loaded (`RTLD_NOLOAD`). The call fails when the core of the folder is not loaded. A
+core without the function, for example the core that stable-retro ships, gives `AttributeError` in Python. After a bad
+value, stable-retro removes the core from the process, so only a libretro frontend that calls the function before the
+game load gets -1.
+
+This example starts a lean environment and stops when the switches are not on. Run it in a Python that has stable-retro
+1.0.1 and an imported Super Mario World ROM. `<out-dir>` is the full path of the core folder.
+
+```sh
+RETRO_CORE_PATH=<out-dir> SNES9X_LEAN=video,dsp <mario-gym>/.venv/bin/python -I -c '
+import ctypes, os
+import stable_retro
+
+env = stable_retro.make("SuperMarioWorld-Snes-v0", state=stable_retro.State.NONE, render_mode=None,
+                        obs_type=stable_retro.Observations.RAM)
+path = os.path.join(os.environ["RETRO_CORE_PATH"], "snes9x_libretro.so")
+core = ctypes.CDLL(path, mode=os.RTLD_NOLOAD | os.RTLD_LAZY)
+flags = core.snes9x_lean_flags()
+if flags != 3:
+    raise SystemExit(f"switch flags {flags}, expected 3")
+env.reset()
+env.step(env.action_space.sample())
+print("switch flags", flags)
+env.close()
+'
+```
+
+The standard output is `switch flags 3`. The standard error stream shows `SNES9X_LEAN: video,dsp`.
 
 ## Parity check
 

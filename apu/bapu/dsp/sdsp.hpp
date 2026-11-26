@@ -10,7 +10,8 @@ public:
 
   inline void synchronize (void) {
     if (clock) {
-      spc_dsp.run (clock);
+      if (!::lean_dsp_off)  // SNES9X_LEAN "dsp" (lean.h)
+        spc_dsp.run (clock);
       clock = 0;
     }
   }

@@ -5,6 +5,7 @@
 #include "srtc.h"
 #include "apu/apu.h"
 #include "apu/bapu/snes/snes.hpp"
+#include "lean.h"
 #include "gfx.h"
 #include "snapshot.h"
 #include "controls.h"
@@ -50,6 +51,72 @@ static retro_audio_sample_t audio_cb = NULL;
 static retro_audio_sample_batch_t audio_batch_cb = NULL;
 static retro_input_poll_t poll_cb = NULL;
 static retro_input_state_t input_state_cb = NULL;
+
+// The switches of SNES9X_LEAN (lean.h).
+bool lean_video_off = false;
+bool lean_dsp_off = false;
+char *lean_bad_value = NULL;
+
+// Read SNES9X_LEAN: switch names with a comma between two names. Unset or empty
+// sets no switch. A bad value sets no switch and makes the game load fail.
+static void lean_read_switches()
+{
+   const char *value = getenv("SNES9X_LEAN");
+   bool video = false;
+   bool dsp = false;
+
+   lean_video_off = false;
+   lean_dsp_off = false;
+   free(lean_bad_value);
+   lean_bad_value = NULL;
+
+   if (!value || !*value)
+      return;
+
+   for (const char *name = value; ; name++)
+   {
+      size_t length = strcspn(name, ",");
+
+      if (length == 5 && !strncmp(name, "video", length))
+         video = true;
+      else if (length == 3 && !strncmp(name, "dsp", length))
+         dsp = true;
+      else
+      {
+         lean_bad_value = strdup(value);
+         return;
+      }
+
+      name += length;
+      if (!*name)
+         break;
+   }
+
+   lean_video_off = video;
+   lean_dsp_off = dsp;
+   fprintf(stderr, "SNES9X_LEAN: %s\n",
+         video && dsp ? "video,dsp" : video ? "video" : "dsp");
+}
+
+// True when SNES9X_LEAN has a bad value: no game may run with it.
+static bool lean_reject_game()
+{
+   if (!lean_bad_value)
+      return false;
+
+   fprintf(stderr, "SNES9X_LEAN: error: bad value \"%s\", the game is not loaded "
+         "(valid names: video, dsp; a comma between two names)\n", lean_bad_value);
+   return true;
+}
+
+// Exported (link.T): lets a program make sure that its switches are on.
+extern "C" int snes9x_lean_flags(void)
+{
+   if (lean_bad_value)
+      return -1;
+
+   return (lean_video_off ? 1 : 0) | (lean_dsp_off ? 2 : 0);
+}
 
 static void extract_basename(char *buf, const char *path, size_t size)
 {
@@ -579,6 +646,9 @@ static bool ChronoTriggerFrameHack;
 
 bool retro_load_game(const struct retro_game_info *game)
 {
+   if (lean_reject_game())
+      return false;
+
    init_descriptors();
    memorydesc_c = 0;
 
@@ -634,6 +704,9 @@ void retro_unload_game(void)
 
 bool retro_load_game_special(unsigned game_type,
       const struct retro_game_info *info, size_t num_info) {
+
+  if (lean_reject_game())
+     return false;
 
   init_descriptors();
   memorydesc_c = 0;
@@ -700,6 +773,8 @@ static void check_system_specs(void)
 void retro_init(void)
 {
    struct retro_log_callback log;
+
+   lean_read_switches();
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       log_cb = log.log;
@@ -977,6 +1052,9 @@ void retro_run()
    }
    poll_cb();
    report_buttons();
+   // Set again before each frame: a state load or a reset turns drawing on.
+   if (lean_video_off)
+      IPPU.RenderThisFrame = FALSE;
    S9xMainLoop();
 }
 
