@@ -94,19 +94,26 @@ state and the inputs MUST be the same. The work RAM is the 128 KB memory at `$7E
 - **THEN** the work RAM is equal after each frame of each recording
 
 ### Requirement: Video switch stops the drawing
-With the switch `video`, the core MUST NOT draw the screen and MUST NOT give a new picture to the program. A state load
-MUST NOT start the drawing again. The core MUST NOT stop when the program reads the screen. Because the switch applies
-from the start of the core, the core gives no picture; with stable-retro, the screen then shows a black picture.
+With the switch `video`, the core MUST NOT draw the screen and MUST NOT give a picture to the program. A state load
+MUST NOT start the drawing again. The switch applies from the start of the core, so the program never gets a picture.
+stable-retro then rejects a screen read and image observations with an error. After that error, the emulator MUST
+continue, and RAM observations MUST operate as without the switch.
 
 #### Scenario: Drawing after a state load
 - **GIVEN** the core with the switch `video`
 - **WHEN** the program loads a state and runs 60 frames
 - **THEN** the core draws no picture in these frames
 
-#### Scenario: Screen read with no picture
-- **GIVEN** the core with the switch `video` gave no picture since it started
-- **WHEN** the program reads the screen through stable-retro
-- **THEN** the program gets a black picture of 224 x 256 pixels and the core continues
+#### Scenario: Screen read under the switch video
+- **GIVEN** a stable-retro environment with RAM observations on the core with the switch `video`
+- **WHEN** the program reads the screen before the first frame, after 600 frames or after a state load
+- **THEN** stable-retro raises an error
+- **AND** the program can continue to run frames and the work RAM changes as without the switch
+
+#### Scenario: Image observations under the switch video
+- **GIVEN** the core with the switch `video`
+- **WHEN** a program makes a stable-retro environment with image observations
+- **THEN** stable-retro raises an error and makes no environment
 
 ### Requirement: DSP switch stops the sound DSP
 With the switch `dsp`, the sound DSP MUST NOT run. The sound CPU (SPC700) MUST continue to run, so the game and the sound

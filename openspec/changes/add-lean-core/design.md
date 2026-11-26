@@ -9,8 +9,11 @@ checkout or on the shipped binary of stable-retro 1.0.1):
   libretro port, so nothing sets the flag per frame. Only `S9xUnfreezeFromStream` (`snapshot.cpp:1703`, a state load)
   sets it back to TRUE; the TRUE in `gfx.cpp:453` is under `#ifdef DEBUGGER` and is not built. With the flag FALSE,
   `RenderLine` still runs `S9xSetupOBJ` and keeps `PPU.RangeTimeOver` (Snes9x's frameskip design), and
-  `S9xEndScreenRefresh` does not call `video_cb`. stable-retro's `get_screen()` then keeps the last picture (black before
-  the first one); no crash.
+  `S9xEndScreenRefresh` does not call `video_cb`. With the switch set from the core start, `video_cb` is never called,
+  so stable-retro has no framebuffer: `get_screen()` and image observations raise `RuntimeError` ("Core did not provide
+  a CPU framebuffer"), while RAM observations work (found in task 3.2; an earlier test that switched drawing off after
+  the first picture had shown a black screen instead). The owner chose this loud error over a black picture
+  (2026-11-26): a program that needs pictures fails at once instead of seeing only black.
 - **Sound.** In this build (`SNES9X` is defined in `apu/bapu/snes/snes.hpp:6`) the SPC700 only counts `dsp.clock`; the DSP runs only when
   `DSP::synchronize()` (`apu/bapu/dsp/sdsp.hpp`) catches it up: on a DSP register read or write and at
   `S9xAPUEndScanline`. `synchronize()` calls `spc_dsp.run(clock)` and then sets `clock = 0`. The game CPU talks only to the
