@@ -36,7 +36,7 @@ set `TMPDIR` to another folder outside the checkout.
 | Set            | Added compiler flags                                            |
 |----------------|-----------------------------------------------------------------|
 | `stable-retro` | None. This is the recipe of stable-retro.                       |
-| `default`      | The flags that the flag A/B accepts. None yet.                  |
+| `default`      | `-flto`. See "Compiler flags".                                  |
 
 A build without `--flags` uses `default`. The table of the sets is the function `flags_of_set` in `lean/build.sh`.
 
@@ -274,8 +274,41 @@ the time of the reference. `speed-up` is the reverse ratio. With a switch settin
 switches (`snes9x_lean_flags`) and reports an error when they do not match the setting. The bench then stops with exit
 code 1.
 
-Results: (filled by task 5.2)
+Results of 2026-11-26, microseconds per frame, median of three rounds, on the owner's desktop. "speed-up" is the time of
+the shipped core divided by the time of the setting. A web browser ran during the measurements.
+
+| Setting           | `stable-retro` 1 worker | speed-up | `stable-retro` 16 workers | speed-up | `default` 1 worker | speed-up | `default` 16 workers | speed-up |
+|-------------------|------------------------:|---------:|--------------------------:|---------:|-------------------:|---------:|---------------------:|---------:|
+| shipped core      |                   399.2 |    x1.00 |                     682.8 |    x1.00 |              397.8 |    x1.00 |                680.0 |    x1.00 |
+| no switch         |                   391.2 |    x1.02 |                     670.3 |    x1.02 |              378.9 |    x1.05 |                657.9 |    x1.03 |
+| `video`           |                   259.8 |    x1.54 |                     451.0 |    x1.51 |              248.5 |    x1.60 |                441.6 |    x1.54 |
+| `dsp`             |                   318.2 |    x1.25 |                     537.2 |    x1.27 |              301.8 |    x1.32 |                511.5 |    x1.33 |
+| `video,dsp`       |                   187.9 |    x2.12 |                     312.0 |    x2.19 |              174.9 |    x2.27 |                292.2 |    x2.33 |
+
+With no switch, the `stable-retro` build is already about 2 % faster than the shipped core. Against the `stable-retro`
+build with no switch, one worker gains x1.51 with `video` and x2.08 with `video,dsp` (earlier measurement: x1.48 and
+x2.07).
+
+The `stable-retro` rows and the flag A/B come from the quiet window. The `default` rows were measured right after it:
+the bench started at a load of 1.88 after a long wait for the load to fall, and the 1-worker rounds of `default` vary
+by 1 to 2 % (the other runs by less than 0.5 %). Its `video,dsp` value agrees with two runs in the window (175.8 and
+176.0).
 
 ## Compiler flags
 
-(filled by a later task)
+The flag A/B measured each candidate flag alone on the `stable-retro` recipe: one worker, `video,dsp`, median of three
+rounds. "speed gain" is the time of the `stable-retro` build divided by the time of the arm, minus 1. A flag needs a
+speed gain of at least 2 %. The build of the set `default` must then pass the parity check with no switch and
+with `video,dsp`; a flag that breaks it leaves the set.
+
+| Build                  | us/frame | speed gain | time saved | Result            |
+|------------------------|---------:|-----------:|-----------:|-------------------|
+| `stable-retro`         |    188.2 |          - |          - | reference         |
+| `-O3`                  |    191.7 |     -1.8 % |     -1.9 % | not accepted      |
+| `-flto`                |    176.0 |     +6.9 % |     +6.5 % | accepted on speed |
+| `-march=x86-64-v3`     |    195.5 |     -3.7 % |     -3.9 % | not accepted      |
+
+`-flto` was the only flag with a gain, so it is also the combination. A second run of that build against
+`stable-retro` gave 175.8 and 187.1 (speed gain +6.4 %). The set `default` is `-flto`. It needs no special CPU.
+
+Parity and savestate checks of the `default` build: (filled by task 7.1)

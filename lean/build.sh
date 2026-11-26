@@ -10,7 +10,7 @@ set -euo pipefail
 flags_of_set() {
     case $1 in
         stable-retro) echo "" ;;
-        default)      echo "" ;;  # the flags that the flag A/B accepts; none yet
+        default)      echo "-flto" ;;  # the flags that the flag A/B accepted
         *)            return 1 ;;
     esac
 }

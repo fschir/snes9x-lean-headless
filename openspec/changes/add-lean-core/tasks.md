@@ -38,14 +38,14 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 
 ## 5. Speed bench
 
-- [ ] 5.1 Write `lean/check/bench.py` (design D7: four recordings x first 15,000 frames, 1 worker on CPU 4 and 16 workers on CPUs 0-15, the baseline core with no switch plus the candidate with each switch setting, three rounds in turn, median/lowest/highest, ratios, load-average stop above 2.0 with `--allow-load`); verify that it stops with an error on a load above 2.0 and that a run on a quiet machine prints all arms
-- [ ] 5.2 Run the bench on the `stable-retro` build of the switches and record the table in `lean/README.md`; verify the ratios are near the measured ones (video about x1.48, video+dsp about x2.07 on one worker) or explain the difference in the README
+- [x] 5.1 Write `lean/check/bench.py` (design D7: four recordings x first 15,000 frames, 1 worker on CPU 4 and 16 workers on CPUs 0-15, the baseline core with no switch plus the candidate with each switch setting, three rounds in turn, median/lowest/highest, ratios, load-average stop above 2.0 with `--allow-load`); verify that it stops with an error on a load above 2.0 and that a run on a quiet machine prints all arms
+- [x] 5.2 Run the bench on the `stable-retro` build of the switches and record the table in `lean/README.md`; verify the ratios are near the measured ones (video about x1.48, video+dsp about x2.07 on one worker) or explain the difference in the README
 
 ## 6. Compiler flag A/B
 
-- [ ] 6.1 Build the arms `stable-retro`, `+-O3`, `+-flto`, `+-march=x86-64-v3` with `lean/build.sh --extra` and run, for each, the 1-worker bench with `video,dsp` (no parity pass per arm: owner decision); verify each arm has a result row (median time, gain against `stable-retro`)
-- [ ] 6.2 Build the combination of the flags that passed (a gain of at least 2 %) and run the same bench; verify the combination keeps a gain of at least 2 % or drop the flag that costs it
-- [ ] 6.3 Set the flag set `default` in `lean/build.sh` to the accepted flags, record the A/B table and, when `default` contains `-march=x86-64-v3`, the CPU need in `lean/README.md`; verify `lean/build.sh <dir>` without `--flags` writes `default` into `build-info.txt`
+- [x] 6.1 Build the arms `stable-retro`, `+-O3`, `+-flto`, `+-march=x86-64-v3` with `lean/build.sh --extra` and run, for each, the 1-worker bench with `video,dsp` (no parity pass per arm: owner decision); verify each arm has a result row (median time, gain against `stable-retro`)
+- [x] 6.2 Build the combination of the flags that passed (a gain of at least 2 %) and run the same bench; verify the combination keeps a gain of at least 2 % or drop the flag that costs it
+- [x] 6.3 Set the flag set `default` in `lean/build.sh` to the accepted flags, record the A/B table and, when `default` contains `-march=x86-64-v3`, the CPU need in `lean/README.md`; verify `lean/build.sh <dir>` without `--flags` writes `default` into `build-info.txt`
 
 ## 7. Integration
 
