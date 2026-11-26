@@ -311,4 +311,6 @@ with `video,dsp`; a flag that breaks it leaves the set.
 `-flto` was the only flag with a gain, so it is also the combination. A second run of that build against
 `stable-retro` gave 175.8 and 187.1 (speed gain +6.4 %). The set `default` is `-flto`. It needs no special CPU.
 
-Parity and savestate checks of the `default` build: (filled by task 7.1)
+Checks of the `default` build (`-flto`), 2026-11-26: the parity check gave 0 differing frames of 1,263,629 with no switch
+and with `video,dsp`. The savestate check with `video,dsp` gave 0 differing RAM and screen frames in 54 loads. The
+screen is compared where the baseline core loads a state.

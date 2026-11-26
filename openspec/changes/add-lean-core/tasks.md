@@ -49,8 +49,8 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 
 ## 7. Integration
 
-- [ ] 7.1 Build with the flag set `default` and run the parity check (no switch and `video,dsp`), the savestate check (`video,dsp`) and the speed bench; verify 0 differing frames everywhere and record the final numbers in `lean/README.md`
-- [ ] 7.2 Run `lean/check/selftest.py` and `openspec validate add-lean-core --strict`; verify both pass, then commit the branch `add-lean-core` and push it to GitHub (never to master or to `stable-retro-v1.0.1`)
+- [x] 7.1 Build with the flag set `default` and run the parity check (no switch and `video,dsp`), the savestate check (`video,dsp`) and the speed bench; verify 0 differing frames everywhere and record the final numbers in `lean/README.md`
+- [x] 7.2 Run `lean/check/selftest.py` and `openspec validate add-lean-core --strict`; verify both pass, then commit the branch `add-lean-core` and push it to GitHub (never to master or to `stable-retro-v1.0.1`)
 
 ## Workflow follow-up
 
