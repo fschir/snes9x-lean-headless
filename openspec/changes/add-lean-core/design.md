@@ -115,9 +115,10 @@ the reference. The bench stops when the 1-minute load average is above 2.0, unle
 
 ### D8. Flag A/B
 Arms: `stable-retro`, `+-O3`, `+-flto` (compile and link), `+-march=x86-64-v3`, then the combination of the flags that
-passed. Each arm: the parity check with no switch and with `video,dsp`, and the 1-worker bench with `video,dsp` (the
-training setting). A flag passes with 0 differing frames and a gain of at least 2 % against `stable-retro` (the earlier
-measurements varied by less than 0.5 %). The result table goes into `lean/README.md`; the passed flags become the set
+passed. Each arm: the 1-worker bench with `video,dsp` (the training setting). A flag passes with a gain of at least 2 % against
+`stable-retro` (the earlier measurements varied by less than 0.5 %). No parity pass per arm (owner decision 2026-11-26:
+overkill); the build of the set `default` gets the parity check with no switch and with `video,dsp` in task 7.1, and a
+flag that breaks it leaves the set. The result table goes into `lean/README.md`; the passed flags become the set
 `default`. No `-ffast-math` and no PGO in this change.
 
 ### D10. Read-only switch query `snes9x_lean_flags`

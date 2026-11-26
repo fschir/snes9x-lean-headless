@@ -63,16 +63,17 @@ set `default` MUST add the flags that the flag A/B accepted. A build without a f
 
 ### Requirement: Accepted compiler flags
 A compiler flag MUST be part of the flag set `default` only when it passed the flag A/B. The candidates are `-O3`,
-`-flto` and `-march=x86-64-v3`. A flag passes when the parity check gives 0 differing frames with no switch and with the
-switches `video` and `dsp`, and the speed bench shows a gain of at least 2 % for one worker.
+`-flto` and `-march=x86-64-v3`. A flag passes when the speed bench shows a gain of at least 2 % for one worker. The build
+of the flag set `default` MUST then pass the parity check with no switch and with `video,dsp`. A flag that breaks it
+MUST leave the set.
 
-#### Scenario: Flag with a parity fault
-- **GIVEN** a build with a candidate flag
+#### Scenario: Default build with a parity fault
+- **GIVEN** the build of the flag set `default` with the flags that passed the bench
 - **WHEN** the parity check finds one or more differing frames
-- **THEN** the flag is not part of the flag set `default`
+- **THEN** the flag that causes the difference leaves the flag set `default`
 
 #### Scenario: Flag without a gain
-- **GIVEN** a build with a candidate flag and 0 differing frames
+- **GIVEN** a build with a candidate flag
 - **WHEN** the speed bench shows a gain of less than 2 % for one worker
 - **THEN** the flag is not part of the flag set `default`
 

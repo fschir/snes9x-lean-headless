@@ -43,8 +43,8 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 
 ## 6. Compiler flag A/B
 
-- [ ] 6.1 Build the arms `stable-retro`, `+-O3`, `+-flto`, `+-march=x86-64-v3` with `lean/build.sh --extra` and run, for each, the parity check with no switch and with `video,dsp` and the 1-worker bench with `video,dsp`; verify each arm has a result row (differing frames, median time, gain against `stable-retro`)
-- [ ] 6.2 Build the combination of the flags that passed (0 differing frames and a gain of at least 2 %) and run the same checks; verify the combination also passes or drop the flag that breaks it
+- [ ] 6.1 Build the arms `stable-retro`, `+-O3`, `+-flto`, `+-march=x86-64-v3` with `lean/build.sh --extra` and run, for each, the 1-worker bench with `video,dsp` (no parity pass per arm: owner decision); verify each arm has a result row (median time, gain against `stable-retro`)
+- [ ] 6.2 Build the combination of the flags that passed (a gain of at least 2 %) and run the same bench; verify the combination keeps a gain of at least 2 % or drop the flag that costs it
 - [ ] 6.3 Set the flag set `default` in `lean/build.sh` to the accepted flags, record the A/B table and, when `default` contains `-march=x86-64-v3`, the CPU need in `lean/README.md`; verify `lean/build.sh <dir>` without `--flags` writes `default` into `build-info.txt`
 
 ## 7. Integration
