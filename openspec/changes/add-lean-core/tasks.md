@@ -8,18 +8,18 @@ emulator-heavy step while a mario-gym training run is on. Parallel replays use `
 
 ## 1. Build script and core folder
 
-- [ ] 1.1 Add the variable `LEAN_FLAGS` (empty by default) to `libretro/Makefile`, appended to `CFLAGS`, `CXXFLAGS` and `LDFLAGS` after the `-O2 -DNDEBUG` lines (design D4); verify that `make -n -f Makefile` in `libretro/` gives the same compile and link lines as before the change when `LEAN_FLAGS` is empty
-- [ ] 1.2 Add `lean/snes9x.json` (a copy of stable-retro 1.0.1's `stable_retro/cores/snes9x.json`) and verify it is byte-equal to the installed file
-- [ ] 1.3 Write `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]` (design D4: copy of the tracked and the untracked, not ignored files, with uncommitted edits, into a temp folder, the stable-retro recipe, `snes9x_libretro.so` + `snes9x.json` + `build-info.txt`, check of the 25 exported `retro_*` symbols); verify a build with `--flags stable-retro` succeeds, `git status` is clean after it, and the compile lines contain `-DLAGFIX`, `-w` and `-fPIC`
-- [ ] 1.4 Verify that the folder of 1.3 loads: a Python process with `RETRO_CORE_PATH=<out-dir>` set before `import stable_retro` maps `<out-dir>/snes9x_libretro.so` (check `/proc/self/maps`)
-- [ ] 1.5 Write the build section of `lean/README.md` (command, flag sets, build record, `RETRO_CORE_PATH` use) and verify the documented command runs as written
+- [x] 1.1 Add the variable `LEAN_FLAGS` (empty by default) to `libretro/Makefile`, appended to `CFLAGS`, `CXXFLAGS` and `LDFLAGS` after the `-O2 -DNDEBUG` lines (design D4); verify that `make -n -f Makefile` in `libretro/` gives the same compile and link lines as before the change when `LEAN_FLAGS` is empty
+- [x] 1.2 Add `lean/snes9x.json` (a copy of stable-retro 1.0.1's `stable_retro/cores/snes9x.json`) and verify it is byte-equal to the installed file
+- [x] 1.3 Write `lean/build.sh <out-dir> [--flags stable-retro|default] [--extra "<flags>"]` (design D4: copy of the tracked and the untracked, not ignored files, with uncommitted edits, into a temp folder, the stable-retro recipe, `snes9x_libretro.so` + `snes9x.json` + `build-info.txt`, check of the 25 exported `retro_*` symbols); verify a build with `--flags stable-retro` succeeds, `git status` is clean after it, and the compile lines contain `-DLAGFIX`, `-w` and `-fPIC`
+- [x] 1.4 Verify that the folder of 1.3 loads: a Python process with `RETRO_CORE_PATH=<out-dir>` set before `import stable_retro` maps `<out-dir>/snes9x_libretro.so` (check `/proc/self/maps`)
+- [x] 1.5 Write the build section of `lean/README.md` (command, flag sets, build record, `RETRO_CORE_PATH` use) and verify the documented command runs as written
 
 ## 2. Parity check
 
-- [ ] 2.1 Write `lean/check/replay.py` (design D5: one recording on one core in one process, `RETRO_CORE_PATH` and `SNES9X_LEAN` set before the import, loaded-core control via `/proc/self/maps`, RAM view by `retro_get_memory_data`, weighted 64-bit hash per frame to a `.npy` file); verify on `ysp-direct` with the shipped core that it writes 3,144 hashes and that more than 3,000 of them are distinct
-- [ ] 2.2 Write `lean/check/parity.py` (recordings, baseline core folder, default = the installed stable-retro `cores` folder, candidate core folder, switch value; parallel replays with `taskset -c 0-15`; per-recording output, frame-count fault, hash control, total line, exit code); verify that the build of 1.3 against the shipped core gives 0 differing frames on all nine recordings (1,263,629 frames) and exit code 0
-- [ ] 2.3 Write `lean/check/selftest.py` (plain Python, no pytest, at most 10 cases) for the fault paths of 2.2 on small made-up hash files: one differing frame (exit code not 0, first frame shown), different frame counts, all-equal hashes (hash control), a wrong loaded core path; verify that all cases pass
-- [ ] 2.4 Write the parity section of `lean/README.md` and verify the documented command runs as written
+- [x] 2.1 Write `lean/check/replay.py` (design D5: one recording on one core in one process, `RETRO_CORE_PATH` and `SNES9X_LEAN` set before the import, loaded-core control via `/proc/self/maps`, RAM view by `retro_get_memory_data`, weighted 64-bit hash per frame to a `.npy` file); verify on `ysp-direct` with the shipped core that it writes 3,144 hashes and that more than 3,000 of them are distinct
+- [x] 2.2 Write `lean/check/parity.py` (recordings, baseline core folder, default = the installed stable-retro `cores` folder, candidate core folder, switch value; parallel replays with `taskset -c 0-15`; per-recording output, frame-count fault, hash control, total line, exit code); verify that the build of 1.3 against the shipped core gives 0 differing frames on all nine recordings (1,263,629 frames) and exit code 0
+- [x] 2.3 Write `lean/check/selftest.py` (plain Python, no pytest, at most 10 cases) for the fault paths of 2.2 on small made-up hash files: one differing frame (exit code not 0, first frame shown), different frame counts, all-equal hashes (hash control), a wrong loaded core path; verify that all cases pass
+- [x] 2.4 Write the parity section of `lean/README.md` and verify the documented command runs as written
 
 ## 3. Switches
 

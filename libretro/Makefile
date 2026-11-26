@@ -462,6 +462,15 @@ ifneq ($(HAVE_EXCEPTIONS), 1)
 endif
 endif
 
+# Extra compiler and linker flags (lean/build.sh). They come last, so a later
+# -O3 wins over the -O2 above, and -flto also reaches the link step.
+# CFLAGS follows CXXFLAGS (CFLAGS = $(CXXFLAGS)), so C files get them too.
+LEAN_FLAGS ?=
+ifneq ($(strip $(LEAN_FLAGS)),)
+   CXXFLAGS += $(LEAN_FLAGS)
+   LDFLAGS  += $(LEAN_FLAGS)
+endif
+
 OBJOUT   = -o
 LINKOUT  = -o
 
