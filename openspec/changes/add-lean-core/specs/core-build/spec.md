@@ -21,7 +21,7 @@ folder when `RETRO_CORE_PATH` gives the folder.
 
 ### Requirement: Build record
 The build record of a core folder MUST give the commit of the checkout, if the checkout had uncommitted changes, the
-flag set, the added compiler flags and the compiler version.
+flag set, the added compiler flags, the compiler version and the highest glibc version that the core needs.
 
 #### Scenario: Build with uncommitted changes
 - **GIVEN** a checkout with one changed source file that is not committed
@@ -75,6 +75,16 @@ switches `video` and `dsp`, and the speed bench shows a gain of at least 2 % for
 - **GIVEN** a build with a candidate flag and 0 differing frames
 - **WHEN** the speed bench shows a gain of less than 2 % for one worker
 - **THEN** the flag is not part of the flag set `default`
+
+### Requirement: glibc need
+The glibc version that a core needs comes from the glibc of the build machine. The build documentation MUST say this.
+It MUST give the glibc version that a build on the owner's desktop needs, and it MUST tell the owner to compare the
+version in the build record with the glibc of the target machine.
+
+#### Scenario: glibc version in the build record
+- **GIVEN** a build on the owner's desktop
+- **WHEN** the owner reads the build record
+- **THEN** the record gives the highest glibc version that the core needs, for example 2.38
 
 ### Requirement: CPU of the default build
 When the flag set `default` contains `-march=x86-64-v3`, the project documentation MUST say that the core needs a CPU

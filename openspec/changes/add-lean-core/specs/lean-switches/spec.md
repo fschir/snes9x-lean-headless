@@ -59,6 +59,26 @@ starts. The line MUST give the name of each switch that is set.
 - **WHEN** a program starts the core
 - **THEN** the standard error stream shows one line that contains `video` and `dsp`
 
+### Requirement: Switch query
+The core MUST export the function `snes9x_lean_flags`. After the core starts, the function MUST give the switches that
+are set: bit 0 for `video`, bit 1 for `dsp`. When the value of `SNES9X_LEAN` is bad, it MUST give -1. The function MUST
+NOT change a switch. A program can use it to make sure that the switches are on.
+
+#### Scenario: Query of two switches
+- **GIVEN** the core started with `SNES9X_LEAN` set to `video,dsp`
+- **WHEN** a program calls `snes9x_lean_flags`
+- **THEN** the function gives 3
+
+#### Scenario: Query without switches
+- **GIVEN** the core started with no variable `SNES9X_LEAN`
+- **WHEN** a program calls `snes9x_lean_flags`
+- **THEN** the function gives 0
+
+#### Scenario: Query after a bad value
+- **GIVEN** the core started with `SNES9X_LEAN` set to `video,sound`
+- **WHEN** a program calls `snes9x_lean_flags`
+- **THEN** the function gives -1
+
 ### Requirement: Baseline behavior without switches
 When no switch is set, the core MUST operate as the baseline core. The baseline core is the core of the branch
 `stable-retro-v1.0.1`. With the same start state and the same inputs, the work RAM after each frame MUST be equal. The

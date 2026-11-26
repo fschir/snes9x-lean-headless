@@ -40,8 +40,8 @@ checkout or on the shipped binary of stable-retro 1.0.1):
 
 **Non-Goals:**
 - No change of the frame boundary, the savestate format, the input rules or any emulated timing.
-- No new libretro core option and no exported function: stable-retro answers no core option, and the owner chose the
-  environment variable.
+- No new libretro core option and no exported function that SETS a switch: stable-retro answers no core option, and
+  the owner chose the environment variable. One read-only export reports the switches (D10).
 - No cache of baseline hashes in this change (the two cores replay side by side in about 5 minutes on 16 CPUs).
 
 ## Decisions
@@ -77,7 +77,9 @@ and `libretro/libretro.cpp` (definitions), so the APU code needs only the header
    `env CFLAGS="-w -std=gnu17" CXXFLAGS="-w" LDFLAGS="-w -static-libstdc++ -Wl,--exclude-libs,ALL" make -f Makefile fpic=-fPIC LEAN_FLAGS="<set>"`.
 3. Write `snes9x_libretro.so`, `snes9x.json` (a copy of `lean/snes9x.json`, equal to stable-retro 1.0.1's file) and
    `build-info.txt` (commit, dirty yes/no, flag set and extra flags, `gcc --version` line) into `<out-dir>`.
-4. Check that the library exports the same 25 `retro_*` symbols (LTO must not drop or add exports).
+4. Check that the library exports exactly the names of `lean/exports.txt` (LTO must not drop or add exports): the 25
+   `retro_*` symbols of the baseline and, from task 3.6, `snes9x_lean_flags`.
+5. Write the highest `GLIBC_` symbol version of the library (`objdump -T`) into `build-info.txt` (task 1.6).
 
 The Makefile gets one variable `LEAN_FLAGS`, empty by default, added to `CFLAGS`, `CXXFLAGS` and `LDFLAGS` after the
 `-O2` lines, so a later `-O3` wins and `-flto` reaches the link step. With `LEAN_FLAGS` empty the compile lines are the
@@ -118,6 +120,16 @@ training setting). A flag passes with 0 differing frames and a gain of at least 
 measurements varied by less than 0.5 %). The result table goes into `lean/README.md`; the passed flags become the set
 `default`. No `-ffast-math` and no PGO in this change.
 
+### D10. Read-only switch query `snes9x_lean_flags`
+`int snes9x_lean_flags(void)` (declared `extern "C"` in `lean.h`, defined in `libretro/libretro.cpp`, listed in
+`libretro/link.T` and `lean/exports.txt`) gives bit 0 = `video`, bit 1 = `dsp`, or -1 after a bad value. It reads the
+flags that `retro_init` set and changes nothing. Reason (owner decision 2026-11-26, after a note from the mario-gym side):
+a `RETRO_CORE_PATH` that comes too late (a forkserver keeps the environment of its first start) or a baseline core
+runs without the switches and without an error, only slower; a consumer reads the function through ctypes
+(`RTLD_NOLOAD` on the loaded core) and stops when the flags are not the ones it asked for.
+- *Alternative:* the consumer captures the stderr report line during `stable_retro.make`. Kept as a second signal, but
+  a redirect of file descriptor 2 around the core start is fragile.
+
 ### D9. Documentation
 `lean/README.md`: the switches, the build command and flag sets, the CPU need of `default` (when it contains
 `-march=x86-64-v3`), how mario-gym loads the core folder, the three checks and their last results.
@@ -139,6 +151,10 @@ measurements varied by less than 0.5 %). The result table goes into `lean/README
 - [Lean savestates are not byte-equal to baseline savestates] -> Accepted (spec "Savestates in two directions");
   mario-gym compares RAM and observations, never savestate bytes (checked: no state-byte comparison in its `src/`).
 - [A speed bench near another job's load gives wrong numbers] -> The load-average stop (D7); CPU sets fixed.
+- [The core needs the glibc of the build machine: a GCC-16.2 build on the owner's desktop (glibc 2.44) needs glibc 2.38
+  (`__isoc23_*` 2.38, `arc4random` 2.36), the shipped manylinux core 2.25; so it loads on Ubuntu 24.04 (2.39), not on
+  22.04 (2.35)] -> `build-info.txt` gives the highest version needed (task 1.6) and the README states the floor (owner
+  decision 2026-11-26: record and document; no manylinux build in this change).
 
 ## Migration Plan
 
